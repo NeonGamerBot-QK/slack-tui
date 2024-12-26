@@ -1,0 +1,5 @@
+node_modules
+.env
+assets/data
+log.txt
+cry.js
