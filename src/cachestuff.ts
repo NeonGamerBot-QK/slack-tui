@@ -26,6 +26,7 @@ export async function cacheUsers(app:App) {
           break;
         }
       } while (cursor);
+      
     //   console.log('All member IDs:', allUserIds);
       fs.writeFileSync("assets/data/cache-users.json", JSON.stringify(allUsers));
       return allUsers;
@@ -34,8 +35,10 @@ export async function cacheUsers(app:App) {
     }
 }
 export function getCachedUsers() {
-    return JSON.parse(fs.readFileSync("assets/data/cache-users.json").toString())
-}
+  //@ts-ignore
+    let r = global.users ? global.users : global.users = JSON.parse(fs.readFileSync("assets/data/cache-users.json").toString())
+  return r;
+  }
 
 // export async function cacheChannels() {
 //     //@ts-ignore
@@ -83,4 +86,7 @@ export async function compileRequestedChannels(channels:string[], app: App) {
 
 export function getCachedChannels() {
     return JSON.parse(fs.readFileSync("assets/data/cache-channels.json").toString())
+}
+export function getUserName(user_id:string){
+    return getCachedUsers().find((e:any)=>e.id == user_id)?.name
 }

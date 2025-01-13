@@ -3,15 +3,19 @@ import blessed from "blessed"
 import {App} from "@slack/bolt"
 //@ts-ignore
 import correctEmoji from "../assets/emoji.json"
-import { cacheUsers, compileRequestedChannels, doINeedToCache, getCachedChannels, getCachedUsers } from "./cachestuff"
+import { cacheUsers, compileRequestedChannels, doINeedToCache, getCachedChannels, getCachedUsers, getUserName } from "./cachestuff"
 import { existsSync, readFileSync } from "fs"
 const app = new App({
     token: process.env.USER_TOKEN,
     socketMode: true,
     appToken: process.env.APP_TOKEN,
 })
+enum FocusedOn {
+  Channels,
+  Chat
+}
+let focused = FocusedOn.Channels
 async function main() {
-
 
 if(doINeedToCache()) {
     console.log("caching users")
@@ -42,6 +46,7 @@ t= cleanEmojis(t)
 })
 app.start(3001)
 }
+
 async function screenMain() {
     const screen = blessed.screen({
         smartCSR: true,
@@ -63,6 +68,7 @@ async function screenMain() {
     //     name: `2mychannelnamehere22`,
     //     id: `hriuefhre2iun`,
     //   }]|| 
+    let selected_channel: string | null = null
       //@ts-ignore
       const fake_channels = (getCachedChannels() as any[][]).flat().filter(Boolean)
       console.log(`Cached users`)
@@ -73,12 +79,12 @@ async function screenMain() {
           return process.exit(0);
         });
       // Create a box perfectly centered horizontally and vertically.
-      var chats = blessed.box({
+      var chats = blessed.list({
           // top: 'center',
           left: "15%",
           // right: "3%",
           // right: 'right',
-          // right: 'center',
+          // right: 'center3432',
           width: '86%',
           height: '90%',
           // content: 'chats here :P',
@@ -167,54 +173,123 @@ async function screenMain() {
             }
         })
         async function renderMessages(channel_id: string){
-            console.debug(`#${channel_id}`)
+            // console.debug(`#${channel_id}`)
             // clear the chats
             chats.setContent("")
-          for(const message of await app.client.conversations.history({ channel: channel_id }).then(e=>e.messages!)){
-              const messageBox = blessed.box({
-                parent: chats,
-                height: "10%",
-                content:`${message.username}: ${message.text || "No text found"}`,
-                tags: true,
-                border: {
-                  type: 'line'
-                },
-              })
+            chats.clearItems()
+          for(const message of ((await app.client.conversations.history({ channel: channel_id, limit: 100 }).then(e=>e.messages!)).reverse())){
+            // console.debug(0)
+              // const messageBox = blessed.box({
+              //   parent: chats,
+              //   height: "10%",
+              //   content:`${message.username}: ${message.text || "No text found"}`,
+              //   tags: true,
+              //   border: {
+              //     type: 'line'
+              //   },
+              // })
+              if(message.thread_ts) continue;
+
+              // if(message.subtype) continue;
+              if(message.subtype== "channel_join") {
+                chats.add(`${getUserName(message.user!)} joined`)
+              } else if (message.subtype== "channel_leave") {
+                chats.add(`${getUserName(message.user!)} left`)
+              } else if(message.subtype == "channel_topic") {
+                chats.add(`${getUserName(message.user!)} changed the topic to ${message.topic}`)
+              } else if(message.subtype == "channel_purpose") {
+                chats.add(`${getUserName(message.user!)} changed the purpose to ${message.purpose}`)
+              } else if (message.subtype == "bot_message") {
+                chats.add(`${getUserName(message.user!)} (bot): ${message.text || "No text found"}`)
+              } else if (message.subtype == "tabbed_canvas_updated") {
+                chats.add(`Idk the canvas got updated ig`) // FIXME: WTF IS THIS
+              } else if (message.subtype == "channel_archive") {
+                chats.add(`${getUserName(message.user!)} archived the channel`)
+              } else if(message.subtype == "reminder_add") {
+                chats.add(`${getUserName(message.user!)} added a reminder: ${message.text}`)
+              } else if (message.subtype == "joiner_notification_for_inviter") {
+                chats.add(`You invited ${getUserName(message.user!)} to the workspace msg thing`)
+              } else if (message.subtype == "channel_convert_to_private") {
+                chats.add(`${getUserName(message.user!)} made the channel private`)
+              }
+              // slackbot_response
+              else {
+                chats.add(`${getUserName(message.user!)}: ${message.text || "No text found"}`)
+              }
+              // if(message )
           }
           screen.render();
         }
         chatInput.key(['enter'], function(ch, key) {
           // chats.pushLine(chatInput.getValue().trim());
           //TODO: you know like um send a real message
+          const message = chatInput.getValue().trim()
+          if(message.length <= 0) return;
+          // console.log(message)
+          if(selected_channel) {
+           app.client.chat.postMessage({
+               channel: selected_channel!,
+               text: `${message || "broken message"}`,
+              ...(process.env.SEND_FOOTER ? {
+                blocks: [{
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: message || "broken message"
+                  }
+                },{
+                  type: "context",
+                  elements: [{
+                    type: "mrkdwn",
+                    text: `*Sent via slack tui*`
+                  }]
+                }]
+              } : {
+                 text: message || "broken message"
+              })
+           })
+          //  console.log(1)
+          }
           chatInput.clearValue();
           screen.render();
         });
         channelBox.on('select', function(ch, key) {
             // chats.pushLine(channel.name);
+                     //@ts-ignore
+                     selected_channel = fake_channels[channelBox.selected].id
             //@ts-ignore
             renderMessages(fake_channels[channelBox.selected].id)
-        })
+        console.log(selected_channel)
+          })
+          chatInput.on('click', () => {
+            chatInput.focus()
+          })
         screen.key(['up', 'down'], function (ch, key) {
             // console.debug(key.name, `#event`)
+       // switch case w/ whatever is focused, by default its the channels
+        if(focused == FocusedOn.Channels) {
             //@ts-ignore
-            let index = channelBox.selected;  // Get the current selection index
+          let index = channelBox.selected;  // Get the current selection index
           
-            if (key.name === 'up') {
-              // Move the selection up
-              if (index > 0) {
-                channelBox.select(index - 1);
-              }
-            } else if (key.name === 'down') {
-              // Move the selection down
-              //@ts-ignore
-              if (index < channelBox.items.length - 1) {
-                channelBox.select(index + 1);
-              }
+          if (key.name === 'up') {
+            // Move the selection up
+            if (index > 0) {
+              channelBox.select(index - 1);
             }
-           //@ts-ignore
-           renderMessages(fake_channels[channelBox.selected].id)
-            // Update the selected channel when navigating
-            // updateSelectedChannel(listbox.getItem(index).getContent());
+          } else if (key.name === 'down') {
+            // Move the selection down
+            //@ts-ignore
+            if (index < channelBox.items.length - 1) {
+              channelBox.select(index + 1);
+            }
+          }
+         //@ts-ignore
+         renderMessages(fake_channels[channelBox.selected].id)
+                  //@ts-ignore
+                  selected_channel = fake_channels[channelBox.selected].id
+          // Update the selected channel when navigating
+          // updateSelectedChannel(listbox.getItem(index).getContent());
+        }
             screen.render();
           });
         // Append our box to the screen.
@@ -263,7 +338,6 @@ async function screenMain() {
         //     });
         // }
   screen.render();
-
     }
 main()
 screenMain()
