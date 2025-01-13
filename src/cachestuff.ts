@@ -88,5 +88,7 @@ export function getCachedChannels() {
     return JSON.parse(fs.readFileSync("assets/data/cache-channels.json").toString())
 }
 export function getUserName(user_id:string){
-    return getCachedUsers().find((e:any)=>e.id == user_id)?.name
+    const cachedName = getCachedUsers().find((e:any)=>e.id == user_id)?.name
+    if(cachedName) return cachedName
+    // time to cache a new name!!
 }

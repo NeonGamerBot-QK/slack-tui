@@ -1,15 +1,32 @@
 import "dotenv/config"
 import blessed from "blessed"
 import {App} from "@slack/bolt"
+import fs from "fs"
 //@ts-ignore
 import correctEmoji from "../assets/emoji.json"
-import { cacheUsers, compileRequestedChannels, doINeedToCache, getCachedChannels, getCachedUsers, getUserName } from "./cachestuff"
+import { cacheUsers, compileRequestedChannels, doINeedToCache, getCachedChannels, getCachedUsers } from "./cachestuff"
 import { existsSync, readFileSync } from "fs"
 const app = new App({
     token: process.env.USER_TOKEN,
     socketMode: true,
     appToken: process.env.APP_TOKEN,
 })
+export async function getUsername(user_id:string){
+  const cachedName = getCachedUsers().find((e:any)=>e.id == user_id)?.name
+  if(cachedName) return cachedName
+  // time to cache a new name!!
+ try {
+  const apiReq =await  app.client.users.info({user: user_id})
+  if(apiReq.user) {
+    fs.writeFileSync("assets/data/cache-users.json", JSON.stringify([...getCachedUsers(), apiReq.user]))
+    return apiReq.user.name
+  }
+ } catch (e: any) {
+  //  console.error(e)
+  if(e.stack.includes("user_not_found")) return `(unknown)`
+   return `(${e.message})`
+ }
+}
 enum FocusedOn {
   Channels,
   Chat
@@ -189,32 +206,31 @@ async function screenMain() {
               //   },
               // })
               if(message.thread_ts) continue;
-
               // if(message.subtype) continue;
               if(message.subtype== "channel_join") {
-                chats.add(`${getUserName(message.user!)} joined`)
+                chats.add(`${await getUsername(message.user!)} joined`)
               } else if (message.subtype== "channel_leave") {
-                chats.add(`${getUserName(message.user!)} left`)
+                chats.add(`${await getUsername(message.user!)} left`)
               } else if(message.subtype == "channel_topic") {
-                chats.add(`${getUserName(message.user!)} changed the topic to ${message.topic}`)
+                chats.add(`${await getUsername(message.user!)} changed the topic to ${message.topic}`)
               } else if(message.subtype == "channel_purpose") {
-                chats.add(`${getUserName(message.user!)} changed the purpose to ${message.purpose}`)
+                chats.add(`${await getUsername(message.user!)} changed the purpose to ${message.purpose}`)
               } else if (message.subtype == "bot_message") {
-                chats.add(`${getUserName(message.user!)} (bot): ${message.text || "No text found"}`)
+                chats.add(`${await getUsername(message.user!)} (bot): ${message.text || "No text found"}`)
               } else if (message.subtype == "tabbed_canvas_updated") {
                 chats.add(`Idk the canvas got updated ig`) // FIXME: WTF IS THIS
               } else if (message.subtype == "channel_archive") {
-                chats.add(`${getUserName(message.user!)} archived the channel`)
+                chats.add(`${await getUsername(message.user!)} archived the channel`)
               } else if(message.subtype == "reminder_add") {
-                chats.add(`${getUserName(message.user!)} added a reminder: ${message.text}`)
+                chats.add(`${await getUsername(message.user!)} added a reminder: ${message.text}`)
               } else if (message.subtype == "joiner_notification_for_inviter") {
-                chats.add(`You invited ${getUserName(message.user!)} to the workspace msg thing`)
+                chats.add(`You invited ${await getUsername(message.user!)} to the workspace msg thing`)
               } else if (message.subtype == "channel_convert_to_private") {
-                chats.add(`${getUserName(message.user!)} made the channel private`)
+                chats.add(`${await getUsername(message.user!)} made the channel private`)
               }
               // slackbot_response
               else {
-                chats.add(`${getUserName(message.user!)}: ${message.text || "No text found"}`)
+                chats.add(`${await getUsername(message.user!)}: ${message.text || "No text found"}`)
               }
               // if(message )
           }
@@ -292,6 +308,16 @@ async function screenMain() {
         }
             screen.render();
           });
+          screen.key(['tab'], function (ch, key) {
+            focused = focused == FocusedOn.Channels ? FocusedOn.Chat : FocusedOn.Channels
+              // channelBox.fg
+              channelBox.style.fg = focused == FocusedOn.Channels ? "magenta" : "magenta"
+              channelBox.bg = 3
+              if(focused == FocusedOn.Channels) channelBox.focus()
+              // console.log(channelBox.style)
+              // channelBox.render()
+            screen.render();
+          })
         // Append our box to the screen.
         screen.append(chats);
         screen.append(channelBox);
