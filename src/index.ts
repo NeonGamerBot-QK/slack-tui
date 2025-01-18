@@ -356,9 +356,36 @@ async function screenMain() {
                 parent: screen,
                 top: "center",
                 left: "center",
+                //center text2
                 width: "50%",
-                height: "50%",
+                height: "30%",
                 content: "Are you sure you want to delete this message?",
+                tags: true,
+                border: {
+                  type: 'line'
+                },
+                style: {
+                  fg: 'white',
+                //   bg: 'magenta',
+                  border: {
+                    fg: '#f0f0f0'
+                  },
+                  // hover: {
+                  //   bg: 'green'
+                  // }
+                }
+              })
+              // create yes and no button in the popup
+              const yes = blessed.box({
+                parent: popup,
+                top: "center",
+                left: "center",
+                width: "30%",
+                
+                height: "50%",
+                content: "Yes",
+                shadow: true,
+                shrink: true,
                 tags: true,
                 border: {
                   type: 'line'
@@ -371,31 +398,73 @@ async function screenMain() {
                   },
                   hover: {
                     bg: 'green'
+                    // bg: 'green'
+                  },
+                  focus: {
+                    bg: 'green'
+                  }
+                }
+                // focus: {
+
+
+              })
+              const no = blessed.box({
+                parent: popup,
+                top: "center",
+                // right: "center",
+                width: "30%",
+                height: "50%",
+                content: "No",
+                tags: true,
+                border: {
+                  type: 'line'
+                },
+                style: {
+                  fg: 'white',
+                //   bg: 'magenta',
+                  border: {
+                    fg: '#f0f0f0'
+                  },
+                  hover: {
+                    bg: 'red'
+                    // bg: 'green'
+                  },
+                  focus: {
+                    bg: 'red'
                   }
                 }
               })
-              popup.key(['y'], function(ch, key) {
-                // chats.pushLine(chatInput.getValue().trim());
-                //TODO: you know like um send a real message
-                const message = chatInput.getValue().trim()
-                if(message.length <= 0) return;
-                // console.log(message)
-                if(selected_channel) {
-                 app.client.chat.delete({
-                  channel: selected_channel!,
-                  //@ts-ignore
-                  ts: global_messages[chats.selected]!.ts
-                })
-                //@ts-ignore
-                chats.removeItem(chats.selected)
-                }
+              yes.on('click', () => {
                 popup.destroy()
                 screen.render();
               })
-              popup.key(['n'], function(ch, key) {
+              no.on('click', () => {
                 popup.destroy()
                 screen.render();
               })
+              // popup.key(['y'], function(ch, key) {
+              //   // chats.pushLine(chatInput.getValue().trim());
+              //   //TODO: you know like um send a real message
+              //   const message = chatInput.getValue().trim()
+              //   if(message.length <= 0) return;
+              //   // console.log(message)
+              //   if(selected_channel) {
+              //    app.client.chat.delete({
+              //     channel: selected_channel!,
+              //     //@ts-ignore
+              //     ts: global_messages[chats.selected]!.ts
+              //   })
+              //   //@ts-ignore
+              //   chats.removeItem(chats.selected)
+              //   }
+              //   popup.destroy()
+              //   screen.render();
+              // })
+              // popup.key(['n'], function(ch, key) {
+              //   popup.destroy()
+              //   screen.render();
+              // })
+              screen.render();
 
               // //@ts-ignore
               // const ts = global_messages[chats.selected]!.ts
@@ -429,5 +498,6 @@ async function screenMain() {
 main()
 screenMain()
 process.on('uncaughtException', function (err) {
-  console.error(err)  
+  // console.error(err)  
+  debugFunc(err.stack!)
 })

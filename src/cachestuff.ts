@@ -40,34 +40,6 @@ export function getCachedUsers() {
   return r;
   }
 
-// export async function cacheChannels() {
-//     //@ts-ignore
-//     if(app.bclient) app = app.bclient
-//     let allChannels:any[] = [];
-//     let cursor;
-//     try {
-//       do {
-//         const result = await app.client.conversations.list({
-//           cursor: cursor
-//         });
-//         if (result.ok) {
-//           // Extract user IDs from the current page
-//           const channels = result.channels;
-//           allChannels = [...allChannels, ...channels!];
-//           // Set the cursor for the next request, if any
-//           cursor = result.response_metadata?.next_cursor;
-//         } else {
-//           console.error('Error fetching channels:', result.error);
-//           break;
-//         }
-//       } while (cursor);
-//     //   console.log('All member IDs:', allUserIds);
-//       fs.writeFileSync("assets/cache-channels.json", JSON.stringify(allChannels));
-//       return allChannels;
-//     } catch (error) {
-//       console.error('Error fetching channels:', error);
-//     }
-// }
 export async function compileRequestedChannels(channels:string[], app: App) {
    const currentChannelCache = fs.existsSync("assets/data/cache-channels.json") ? JSON.parse(fs.readFileSync("assets/data/cache-channels.json").toString()) : []
    const newStuff = []
@@ -86,9 +58,4 @@ export async function compileRequestedChannels(channels:string[], app: App) {
 
 export function getCachedChannels() {
     return JSON.parse(fs.readFileSync("assets/data/cache-channels.json").toString())
-}
-export function getUserName(user_id:string){
-    const cachedName = getCachedUsers().find((e:any)=>e.id == user_id)?.name
-    if(cachedName) return cachedName
-    // time to cache a new name!!
 }
