@@ -5,7 +5,7 @@ import fs from "fs"
 //@ts-ignore
 import correctEmoji from "../assets/emoji.json"
 import { cacheUsers, compileRequestedChannels, doINeedToCache, getCachedChannels, getCachedUsers } from "./cachestuff"
-import { existsSync, readFileSync } from "fs"
+import { readFileSync } from "fs"
 const app = new App({
     token: process.env.USER_TOKEN,
     socketMode: true,
@@ -18,6 +18,7 @@ const debugFunc = (text:string) => {
     body: text + "\n"
   })
 }
+
 export async function getUsername(user_id:string){
   const cachedName = getCachedUsers().find((e:any)=>e.id == user_id)?.name
   if(cachedName) return cachedName

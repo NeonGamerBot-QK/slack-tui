@@ -39,7 +39,6 @@ export function getCachedUsers() {
     let r = global.users ? global.users : global.users = JSON.parse(fs.readFileSync("assets/data/cache-users.json").toString())
   return r;
   }
-
 export async function compileRequestedChannels(channels:string[], app: App) {
    const currentChannelCache = fs.existsSync("assets/data/cache-channels.json") ? JSON.parse(fs.readFileSync("assets/data/cache-channels.json").toString()) : []
    const newStuff = []
