@@ -18,7 +18,6 @@ const debugFunc = (text:string) => {
     body: text + "\n"
   })
 }
-
 export async function getUsername(user_id:string){
   const cachedName = getCachedUsers().find((e:any)=>e.id == user_id)?.name
   if(cachedName) return cachedName
@@ -28,6 +27,7 @@ export async function getUsername(user_id:string){
   if(apiReq.user) {
     fs.writeFileSync("assets/data/cache-users.json", JSON.stringify([...getCachedUsers(), apiReq.user]))
     return apiReq.user.name
+
   }
  } catch (e: any) {
   //  console.error(e)
@@ -38,6 +38,17 @@ export async function getUsername(user_id:string){
 enum FocusedOn {
   Channels,
   Chat
+}
+function cleanEmojis(t:string){
+  let emojis = t.match(/:\w+:/g)
+if(emojis){
+  // console.log(emojis)
+  for(const emoji of emojis){
+      //@ts-ignore
+      t = t.replaceAll(emoji, correctEmoji[emoji.split(":").join("")] || emoji)
+  }
+}
+return t;
 }
 let focused = FocusedOn.Channels
 async function main() {
@@ -50,29 +61,27 @@ if(doINeedToCache()) {
    console.log(`Compiling channels`)
   await  compileRequestedChannels(JSON.parse(readFileSync("assets/data/channels-to-cache.json").toString()), app)
 // }  
-function cleanEmojis(t:string){
-    let emojis = t.match(/:\w+:/g)
-if(emojis){
-    // console.log(emojis)
-    for(const emoji of emojis){
-        //@ts-ignore
-        t = t.replaceAll(emoji, correctEmoji[emoji.split(":").join("")] || emoji)
-    }
-}
-return t;
-}
-//@ts-ignore
-app.event("message", (par) => {
-//@ts-ignore
-let t = par.event.text
-if(!t) return;
-t= cleanEmojis(t)
-    // console.log(par.body, t)
-})
+
 app.start(3001)
 }
 
 async function screenMain() {
+  //@ts-ignore
+app.event("message",async  (par) => {
+  // debugFunc(`message`)
+//@ts-ignore
+let t = par.event.text
+if(!t) return;
+t= cleanEmojis(t)
+//@ts-ignore
+// debugFunc(`Message recieved: ${t} from ${par.event.user}`)
+if(par.event.channel == selected_channel) {
+  //@ts-ignore
+  chats.add(`${await getUsername(par.event.user)}: ${t}`)
+  screen.render()
+}
+    // console.log(par.body, t)
+})
     const screen = blessed.screen({
         smartCSR: true,
         autoPadding: true,

@@ -1,5 +1,6 @@
 node_modules
 .env
 assets/data
+!assets/data/channels-to-cache.json
 log.txt
 cry.js
