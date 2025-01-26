@@ -28,15 +28,20 @@ export async function cacheUsers(app: App) {
     } while (cursor);
 
     //   console.log('All member IDs:', allUserIds);
-    fs.writeFileSync("assets/data/cache-users.json", JSON.stringify(allUsers.map(e=>{
-     return {
-      id: e.id,
-      name: e.name,
-      real_name: e.real_name,
-      is_bot: e.is_bot,
-      is_app_user: e.is_app_user,
-     }
-    })));
+    fs.writeFileSync(
+      "assets/data/cache-users.json",
+      JSON.stringify(
+        allUsers.map((e) => {
+          return {
+            id: e.id,
+            name: e.name,
+            real_name: e.real_name,
+            is_bot: e.is_bot,
+            is_app_user: e.is_app_user,
+          };
+        }),
+      ),
+    );
     return allUsers;
   } catch (error) {
     console.error("Error fetching members:", error);
@@ -46,10 +51,10 @@ export async function cacheUsers(app: App) {
 export function getCachedUsers() {
   //@ts-ignore
   let r = global.users
-  //@ts-ignore
-  ? global.users
-  //@ts-ignore
-  : (global.users = JSON.parse(
+    ? //@ts-ignore
+      global.users
+    : //@ts-ignore
+      (global.users = JSON.parse(
         fs.readFileSync("assets/data/cache-users.json").toString(),
       ));
   return r;
