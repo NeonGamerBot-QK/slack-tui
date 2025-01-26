@@ -33,15 +33,17 @@ export async function getUsername(user_id: string) {
     if (apiReq.user) {
       fs.writeFileSync(
         "assets/data/cache-users.json",
-        JSON.stringify([...getCachedUsers(), apiReq.user].map(e=>{
-          return {
-           id: e.id,
-           name: e.name,
-           real_name: e.real_name,
-           is_bot: e.is_bot,
-           is_app_user: e.is_app_user,
-          }
-         })),
+        JSON.stringify(
+          [...getCachedUsers(), apiReq.user].map((e) => {
+            return {
+              id: e.id,
+              name: e.name,
+              real_name: e.real_name,
+              is_bot: e.is_bot,
+              is_app_user: e.is_app_user,
+            };
+          }),
+        ),
       );
       return apiReq.user.name;
     }
